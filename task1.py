@@ -5,6 +5,8 @@ import math
 import aiohttp
 import pandas as pd
 import re
+import logging
+import json
 
 HOST = "https://bt2stag.boataround.com" #Website URL
 HOST_API = "https://stag-api.boataround.com" #Api
@@ -18,7 +20,7 @@ def extractBoatDataJSON(boats, city, check_in, check_out):
     for boat in boats:
         # Filter the boat by city
         if re.search(city,boat.get('city', '').lower(), re.IGNORECASE) :
-            print("Location: ", boat.get('city'))
+            logging.info("Location: ", boat.get('city'))
             charter_name = boat.get('charter', 'Unknown')
             boat_name = boat.get('title', 'Unknown')
             boat_length = boat.get('parameters', {}).get('length', 'Unknown')
@@ -37,21 +39,27 @@ def extractBoatDataJSON(boats, city, check_in, check_out):
 async def fetchDataApi(check_in, check_out, session, currency="EUR", page=1, location="split-1"):
     URI = f"{HOST_API}/v1/search?destinations={location}&page={{}}&checkIn={check_in}&checkOut={check_out}&lang=en_EN&sort=rank&currency={currency}&loggedIn=0&ab=20231127_1"
     boatDataJSON = []
-    # Get the first page and calculate the number of boats and pages
-    task = await session.get(f"{URI.format(1)}")
-    boatDataJSON.append(await task.json())
-    pages = math.ceil(boatDataJSON[-1]["data"][0]["totalBoats"]) // int(boatDataJSON[-1]["data"][0]["totalResults"])
-
-    # Get data about all the available boats
-    for i in range(2,pages):
-
-        print(URI.format(i))
-        task = await session.get(f"{URI.format(i)}")
-        boatDataJSON.append(await task.json())
     dataBoats = []
-    for data in boatDataJSON:
-        print("Processing...")
-        dataBoats += extractBoatDataJSON(data["data"][0]["data"],FILTER_LOCATION, check_in, check_out)
+    # Get the first page and calculate the number of boats and pages
+    try:
+        task = await session.get(f"{URI.format(1)}")
+    except aiohttp.ClientError as e:
+        logging.error(f"Client error occurred: {e}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred: {e}")
+    else:
+        boatDataJSON.append(await task.json())
+        pages = math.ceil(boatDataJSON[-1]["data"][0]["totalBoats"]) // int(boatDataJSON[-1]["data"][0]["totalResults"])
+
+        # Get data about all the available boats
+        for i in range(2,pages):
+
+            print(URI.format(i))
+            task = await session.get(f"{URI.format(i)}")
+            boatDataJSON.append(await task.json())
+        for data in boatDataJSON:
+            logging.info("Processing...")
+            dataBoats += extractBoatDataJSON(data["data"][0]["data"],FILTER_LOCATION, check_in, check_out)
     return dataBoats
 
 async def processData():
@@ -76,14 +84,14 @@ async def processData():
         saturdays.append(current_saturday.strftime("%Y-%m-%d"))
         current_saturday += timedelta(days=7)
     boatData = []
-    session = aiohttp.ClientSession()
-    # Fetch data for these dates
-    for date in range(0, len(saturdays), 2):
-        boatData += await fetchDataApi(saturdays[date], saturdays[date+1], session=session)
-    boatDataPD = pd.DataFrame(boatData)
+    # Create a Client Session
+    # Fetch boats available on these dates
+    async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit_per_host=20,limit=20)) as session:
+        for date in range(0, len(saturdays), 2):
+            boatData += await fetchDataApi(saturdays[date], saturdays[date+1], session=session)
+        boatDataPD = pd.DataFrame(boatData)
     # Save the boat information into an excel file
     with pd.ExcelWriter("boatData.xlsx", mode="w") as file:
         boatDataPD.to_excel(file)
-    await session.close()
 if __name__ == '__main__':
     asyncio.run(processData())

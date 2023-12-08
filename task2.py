@@ -1,3 +1,4 @@
+import logging
 import re
 from selenium import webdriver
 from selenium.common import TimeoutException
@@ -24,7 +25,12 @@ class BoataroundTest(unittest.TestCase):
         driver = self.driver
 
         # Navigate to the Website
-        self.driver.get(URL)
+        try:
+            self.driver.get(URL)
+        except Exception as e:
+            logging.info(e)
+            self.fail("Error while opening the URL")
+
 
         # Verify the homepage loaded successfully
         self.assertIn("Boataround", driver.title)
@@ -41,26 +47,14 @@ class BoataroundTest(unittest.TestCase):
         else:
             # Enter destination "Croatia"
             destination_input.click()
+
             destination_input.send_keys("Croatia")
-            time.sleep(1)
+            time.sleep(0.6)
             destination_input.send_keys(Keys.RETURN)
 
-        # Handle the overlay dialog
-        try:
-            dialog = WebDriverWait(driver, 6).until(
-                EC.visibility_of_element_located((By.CLASS_NAME, "overlay-modal-bg"))
-            )
-        except TimeoutException:
-            self.fail("Timed out waiting for boat list to become visible")
-        else:
-            # Close the overlay dialog
-            x = dialog.find_element(By.CLASS_NAME, "overlay-modal__close")
-            driver.execute_script("arguments[0].click();", x)
 
         # Calculate dates from saturday to saturday
         first_saturday = CHECK_IN + timedelta(days=(5 - datetime(2024, 6, 1).weekday()) % 7)
-
-
         toMonth = first_saturday.strftime("%B")
         second_saturday = datetime.strftime(first_saturday + timedelta(days=7), "%d %b %Y")
         first_saturday = datetime.strftime(first_saturday, "%d %b %Y")
@@ -75,14 +69,14 @@ class BoataroundTest(unittest.TestCase):
             self.fail("Timed out waiting for boat list to become visible")
         else:
             # Select the Date on the calendar
+
             monthInput.click()
-            time.sleep(1)
             calendar = driver.find_element(By.CLASS_NAME,"calendar-3__months")
             nextMonthBtn = driver.find_element(By.CLASS_NAME, "calendar-3__btn--next")
             currMonth = calendar.find_elements(By.CLASS_NAME, "calendar-3__month-year")[1]
             while not re.match(toMonth, currMonth.text, flags=re.IGNORECASE):
                 driver.execute_script("arguments[0].click();", nextMonthBtn)
-                driver.implicitly_wait(0.2)
+                time.sleep(0.1)
                 currMonth = calendar.find_elements(By.CLASS_NAME, "calendar-3__month-year")[1]
 
             ci = calendar.find_element(By.XPATH, f"//button[@title='{first_saturday}']")
@@ -90,11 +84,23 @@ class BoataroundTest(unittest.TestCase):
             co = calendar.find_element(By.XPATH, f"//button[@title='{second_saturday}']")
             driver.execute_script("arguments[0].click();", co)
             driver.execute_script("arguments[0].click();", co)
+            # Handle the overlay dialog
+            try:
+                dialog = WebDriverWait(driver, 6).until(
+                    EC.visibility_of_element_located((By.CLASS_NAME, "overlay-modal-bg"))
+                )
+            except TimeoutException:
+                self.fail("Timed out waiting for boat list to become visible")
+            else:
+                # Close the overlay dialog
+                x = dialog.find_element(By.CLASS_NAME, "overlay-modal__close")
+                driver.execute_script("arguments[0].click();", x)
+
             # Search for the boats
             searchBtn = driver.find_element(By.XPATH, "//button[@value='Search']")
             driver.execute_script("arguments[0].click();", searchBtn)
         finally:
-            print("Test finished.")
+            print("Test B finished.")
 
     def test_c_select_boat_and_modify_dates(self):
         driver = self.driver
@@ -125,6 +131,7 @@ class BoataroundTest(unittest.TestCase):
             print("Test C Finished")
     def test_d_change_date(self):
         driver = self.driver
+
         # Change the date on the availability calendar
         try:
             calendar = WebDriverWait(driver, 10).until(
@@ -133,6 +140,7 @@ class BoataroundTest(unittest.TestCase):
         except TimeoutException:
             self.fail("Timed out waiting for calendar to become visible")
         else:
+            time.sleep(1)
             driver.execute_script("arguments[0].scrollIntoView(true);", calendar)
             availablity = driver.find_element(By.CLASS_NAME, "ava-list-wrapper")
             items = availablity.find_elements(By.CSS_SELECTOR, ".ava-item:not(.past)")
@@ -141,6 +149,7 @@ class BoataroundTest(unittest.TestCase):
             driver.execute_script("console.log(arguments);", items)
             driver.execute_script("arguments[0].click();", cl)
             WebDriverWait(driver, 1)
+
             # Verify updated checkIn and checkOut params in URL
             dates = cl.find_element(By.CLASS_NAME,"ava-date").text
             [checkIn, checkOut] = ["-".join(x.strip().split('/')[::-1]) for x in dates.split("-")]
@@ -153,6 +162,7 @@ class BoataroundTest(unittest.TestCase):
             print("Test D finished.")
     def test_e_reserve_lowest_price_option(self):
         driver = self.driver
+
         # Get the available reservations
         try:
             reservation = WebDriverWait(driver, 10).until(
@@ -170,6 +180,7 @@ class BoataroundTest(unittest.TestCase):
             print("Test E finished.")
     def test_f_enter_your_details(self):
         driver = self.driver
+
         # Check if "Enter Your Details" form exists
         try:
             form = WebDriverWait(driver, 10).until(
@@ -179,9 +190,10 @@ class BoataroundTest(unittest.TestCase):
                 self.fail("Timed out waiting for reservations list to become visible")
         else:
             title = form.find_element(By.CLASS_NAME, "block-heading").text
+            time.sleep(1)
             self.assertEqual(title.lower(), "enter your details")
         finally:
-            print("Test finished.")
+            print("Test F finished.")
     @classmethod
     def tearDownClass(cls):
         cls.driver.quit()
