@@ -28,13 +28,13 @@ This project consists of two main components:
 #### Data Scraper
 
 1. Navigate to the `data_scraper` directory.
-2. Run the script: `python data_scraper.py`
+2. Run the script: `python task1.py`
 3. The output will be an Excel file containing the scraped data.
 
 #### Automated Testing
 
 1. Navigate to the `automated_tests` directory.
-2. Run the tests: `python -m unittest boataround_tests.py`
+2. Run the tests: `python -m unittest task2.py`
 3. Observe the output in the console for test results.
 
 ## Features
