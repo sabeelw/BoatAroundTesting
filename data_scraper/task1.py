@@ -91,7 +91,7 @@ async def processData():
             boatData += await fetchDataApi(saturdays[date], saturdays[date+1], session=session)
         boatDataPD = pd.DataFrame(boatData)
     # Save the boat information into an excel file
-    with pd.ExcelWriter("boatData.xlsx", mode="w") as file:
+    with pd.ExcelWriter("../boatData.xlsx", mode="w") as file:
         boatDataPD.to_excel(file)
 if __name__ == '__main__':
     asyncio.run(processData())
