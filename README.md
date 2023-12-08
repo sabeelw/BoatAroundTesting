@@ -58,6 +58,6 @@ This project consists of two main components:
 - Automated tests cover key user journey aspects on the Boataround website.
 
 
-## Authors
+## Author
 
-Sabeel
+- Sabeel
