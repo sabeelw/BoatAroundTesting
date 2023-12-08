@@ -16,13 +16,14 @@ CHECK_OUT = ""
 def extractBoatDataJSON(boats, city, check_in, check_out):
     boat_info = []
     for boat in boats:
+        # Filter the boat by city
         if re.search(city,boat.get('city', '').lower(), re.IGNORECASE) :
             print("Location: ", boat.get('city'))
             charter_name = boat.get('charter', 'Unknown')
             boat_name = boat.get('title', 'Unknown')
             boat_length = boat.get('parameters', {}).get('length', 'Unknown')
             price_eur = boat.get('price', 0)
-
+        # Save the information of the boat
             boat_info.append({
                 'Charter Name': charter_name,
                 'Boat Name': boat_name,
@@ -36,12 +37,12 @@ def extractBoatDataJSON(boats, city, check_in, check_out):
 async def fetchDataApi(check_in, check_out, session, currency="EUR", page=1, location="split-1"):
     URI = f"{HOST_API}/v1/search?destinations={location}&page={{}}&checkIn={check_in}&checkOut={check_out}&lang=en_EN&sort=rank&currency={currency}&loggedIn=0&ab=20231127_1"
     boatDataJSON = []
+    # Get the first page and calculate the number of boats and pages
     task = await session.get(f"{URI.format(1)}")
     boatDataJSON.append(await task.json())
     pages = math.ceil(boatDataJSON[-1]["data"][0]["totalBoats"]) // int(boatDataJSON[-1]["data"][0]["totalResults"])
-    # List to store the final data
-    searchItemDetails = []
-    # Requesting Data from the HOST
+
+    # Get data about all the available boats
     for i in range(2,pages):
 
         print(URI.format(i))
@@ -76,9 +77,11 @@ async def processData():
         current_saturday += timedelta(days=7)
     boatData = []
     session = aiohttp.ClientSession()
+    # Fetch data for these dates
     for date in range(0, len(saturdays), 2):
         boatData += await fetchDataApi(saturdays[date], saturdays[date+1], session=session)
     boatDataPD = pd.DataFrame(boatData)
+    # Save the boat information into an excel file
     with pd.ExcelWriter("boatData.xlsx", mode="w") as file:
         boatDataPD.to_excel(file)
     await session.close()
