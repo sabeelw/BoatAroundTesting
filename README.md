@@ -61,7 +61,3 @@ This project consists of two main components:
 ## Authors
 
 Sabeel
-
-
-
-- Boataround for providing a platform to develop and test this project.
