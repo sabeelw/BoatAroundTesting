@@ -4,7 +4,7 @@
 
 This project consists of two main components:
 
-1. **Data Scraper**: A Python script designed to scrape boat rental data from [Boataround], focusing on listings in the city of Split for Saturday-to-Saturday bookings between May and September 2024.
+1. **Data Scraper**: A Python script designed to scrape boat rental data from Boataround, focusing on listings in the city of Split for Saturday-to-Saturday bookings between May and September 2024.
 
 2. **Automated Testing with Selenium**: A set of automated tests using Selenium WebDriver to validate the functionality of the Boataround website. This includes navigation, search functionality, date selection, and reservation processes.
 
